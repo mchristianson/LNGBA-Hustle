@@ -150,12 +150,14 @@ One card per player, sorted by jersey number:
 | 6b | Admin | Angie runs it. She has a spreadsheet with all parent emails. | Angie is the first admin. Build CSV import to match her spreadsheet columns. |
 | - | Launch date | First tournament Nov 7-8, 2026. Wants a test at 3v3 (3 weeks left). | Revised schedule below. |
 
-Still open:
+Working assumptions (confirm with Angie):
 
-1. Dates and times of the remaining 3v3 sessions, and which teams play.
-2. A copy (or just the column headers) of Angie's roster spreadsheet.
-3. Photo release confirmation after the parent meeting.
-4. Custom domain, for example `hustle.lakevillenorthgba.org`.
+| Question | Assumption used in the build |
+|---|---|
+| 3v3 dates and teams | Last two 3v3 sessions are Sundays, Oct 11 and Oct 18. Pilot with 2 teams Angie picks. No app changes needed for 3v3: smaller rosters work as-is. |
+| Roster spreadsheet columns | One row per player: Team, Jersey, Player First Name, Player Last Name, Parent 1 Name, Parent 1 Email, Parent 2 Name, Parent 2 Email, optional Coach Name and Coach Email. The importer also accepts a single "Player Name" column and any extra email columns. |
+| Photo releases | Releases are in place. Photos (next phase) stay private to coaches and admins. |
+| Custom domain | Vercel default URL until the association adds `hustle.lakevillenorthgba.org`. |
 
 ## 10. Build phases
 
