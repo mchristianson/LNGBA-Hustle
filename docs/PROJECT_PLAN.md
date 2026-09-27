@@ -157,48 +157,43 @@ Still open:
 3. Photo release confirmation after the parent meeting.
 4. Custom domain, for example `hustle.lakevillenorthgba.org`.
 
-## 10. Build phases and estimate
+## 10. Build phases
 
-| Phase | Work | Hours |
-|---|---|---|
-| 0. Setup | Repo, Next.js, Supabase project, Vercel, Resend, CI, envs | 6 |
-| 1. Data + security | Schema, migrations, RLS policies, seed data, RLS tests | 14 |
-| 2. Auth | Invite tokens, Is-this-you page, OTP login, email templates | 16 |
-| 3. Admin | Seasons, teams, roster CSV import, send and resend invites | 12 |
-| 4. Schedule | Game list, coach quick-add, edit, tournaments | 10 |
-| 5. Scoring | Scoring screen, undo, team scorer + scorer lock, realtime totals, offline queue | 22 |
-| 6. Results | Game summary, team leaderboard (total + per game), all-teams top 3 board, CSV export | 10 |
-| 7. Photos | Camera capture, client-side resize, private storage | 8 |
-| 8. PWA + polish | Manifest, icons, wake lock, add-to-home-screen, accessibility | 8 |
-| 9. QA + launch | Device testing (iOS Safari, Android Chrome), 3v3 tests, docs | 12 |
-| **Total** | | **~118 hours** |
+| Phase | Work |
+|---|---|
+| 0. Setup | Repo, Next.js, Supabase project, Vercel, Resend, CI, envs |
+| 1. Data + security | Schema, migrations, RLS policies, seed data, RLS tests |
+| 2. Auth | Invite tokens, Is-this-you page, OTP login, email templates |
+| 3. Admin | Seasons, teams, roster CSV import, send and resend invites |
+| 4. Schedule | Game list, coach quick-add, edit, tournaments |
+| 5. Scoring | Scoring screen, undo, team scorer + scorer lock, realtime totals, offline queue |
+| 6. Results | Game summary, team leaderboard (total + per game), all-teams top 3 board, CSV export |
+| 7. Photos | Camera capture, client-side resize, private storage |
+| 8. PWA + polish | Manifest, icons, wake lock, add-to-home-screen, accessibility |
+| 9. QA + launch | Device testing (iOS Safari, Android Chrome), 3v3 tests, docs |
 
 ## 11. Schedule to hit Nov 7
 
 The original plan (6 weeks build + 2 weeks pilot) ends in late November. That misses the first tournament. The revised plan ships a small test version in 2 weeks and grows it during the 3v3 sessions.
 
-| Dates (2026) | Goal | Scope | Hours |
-|---|---|---|---|
-| Sep 28 - Oct 10 | **3v3 test version** | Phases 0-3, scoring screen with scorer lock and undo, team leaderboard. Admin enters games. No offline, no photos. | ~60 |
-| Oct 10 - Oct 18 | **3v3 tests** (last 2 sessions) | Fix what parents report. Add offline queue. | ~15 |
-| Oct 19 - Nov 1 | **Full feature set** | Coach game entry, all-teams top 3 board, points per game, photos, CSV export, PWA polish | ~35 |
-| Nov 2 - Nov 4 | **Invites out** | Import all 15 rosters. Send invites. Help parents who get stuck. Code freeze Nov 4. | ~8 |
-| Nov 7 - 8 | **First tournament live** | Watch errors live. Hotfix only. | - |
+| Dates (2026) | Goal | Scope |
+|---|---|---|
+| Sep 28 - Oct 10 | **3v3 test version** | Phases 0-3, scoring screen with scorer lock and undo, team leaderboard. Admin enters games. No offline, no photos. |
+| Oct 10 - Oct 18 | **3v3 tests** (last 2 sessions) | Fix what parents report. Add offline queue. |
+| Oct 19 - Nov 1 | **Full feature set** | Coach game entry, all-teams top 3 board, points per game, photos, CSV export, PWA polish |
+| Nov 2 - Nov 4 | **Invites out** | Import all 15 rosters. Send invites. Help parents who get stuck. Code freeze Nov 4. |
+| Nov 7 - 8 | **First tournament live** | Watch errors live. Hotfix only. |
 
-Pace: about 30 hours/week for the first 2 weeks, then about 17 hours/week.
-
-Email volume: about 330 invites (15 teams x ~20 parents + coaches). Resend's free plan allows 100 emails/day, so invites take 4 days. Either send in batches starting Nov 2, or use Resend Pro ($20/month, 50,000 emails/month) for November.
+Email volume: about 330 invites (15 teams x ~20 parents + coaches). Resend's free plan allows 100 emails/day, so invites take 4 days. Send in batches starting Nov 2, or send the first teams' invites during the 3v3 test.
 
 If time runs short, cut in this order: photos, CSV export, all-teams top 3 board. Scoring, login and the team leaderboard stay.
 
-## 12. Running costs (per month, approximate)
+## 12. Hosting limits to plan around
 
-| Service | Plan | Cost | Notes |
-|---|---|---|---|
-| Supabase | Free, or Pro | $0 or $25 | Free projects pause after 7 days with no activity. Use Pro during the season. |
-| Vercel | Hobby, or Pro | $0 or $20 | Hobby terms cover non-commercial use only. Put the project under the association's own account. |
-| Resend | Free | $0 | 3,000 emails/month, 100/day. About 300 parents and 30 coaches fit easily. Stagger invite sends over days. |
-| Domain | Subdomain of existing site | $0 | DNS record on the LNGBA domain |
+The free tiers of Supabase, Vercel and Resend cover this app. Two limits matter:
+
+1. Supabase pauses a free project after 7 days with no activity. Between tournaments, a scheduled ping (Vercel Cron) keeps it awake.
+2. Resend's free plan sends 100 emails/day. Stagger invites (section 11).
 
 Estimated scale: 15 teams x 10 players x 30 games x 15 events = about 70,000 event rows per season. Well inside the Supabase free tier's 500 MB.
 
