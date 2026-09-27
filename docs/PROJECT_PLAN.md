@@ -29,8 +29,8 @@ Store these in a `hustle_actions` table, not in code. The board then changes poi
 | Role | How they get in | What they do |
 |---|---|---|
 | Admin (association) | Magic link | Manage seasons, teams, rosters, coaches. Import CSV. Export results. |
-| Coach | Magic link from invite | Add and edit games, score players, view summaries, upload top-hustle photo. |
-| Parent | Magic link from invite | Confirm identity, view schedule, score players, view leaderboard. |
+| Coach | Magic link from invite | Add and edit games, view summaries and leaderboards, upload top-hustle photo. No scoring. |
+| Parent | Magic link from invite | Confirm identity, view schedule and leaderboard. The game scorer (one parent per game) enters points. |
 
 ## 4. Tech stack
 
@@ -96,8 +96,8 @@ Key decisions:
 ## 7. Security (RLS)
 
 1. Parents read and write only their own team's games and events.
-2. Coaches read and write their team. Coaches edit or void any event on their team.
-3. Parents void only events they recorded, and only within the game day.
+2. Coaches read their team and write games and photos. Coaches do not write events.
+3. Only the current scorer of a game inserts events for it. Scorers void only their own events, and only within the game day. Admins fix anything after that.
 4. Admins read and write everything.
 5. Photo bucket private. Signed URLs expire in 1 hour. Only coaches and admins upload.
 6. Rate limit the "send me a link" form (Vercel middleware or Upstash) to stop email abuse.
@@ -137,31 +137,27 @@ One card per player, sorted by jersey number:
 6. Optional compact mode: tap a player, then an action, for rosters over 10.
 7. Sync badge: "All saved" or "3 waiting to upload".
 
-## 9. Open question: who is the official scorer?
+## 9. Client decisions (Angie, Sep 2026)
 
-The client says one parent fills out the sheet per game. The request says every parent scores. If three parents tap the same rebound, that player gets 3 points.
+| # | Question | Answer | What we build |
+|---|---|---|---|
+| 1 | Who enters points | One scorer per game | Scorer lock per game. Other parents see live totals, read only. |
+| 2 | How the scorer is picked | Each team decides. Each team names one parent to run it. | Each team has a default "team scorer." Any parent on the team can tap "I'm scoring this game" when the team scorer is absent. The current scorer or an admin hands it off. |
+| 3 | Coaches scoring | Coaches do not score | Coaches add games, view results, upload photos. No scoring buttons. Admin fixes mistakes after the game day. |
+| 4 | Trophy winner | Show both, coach decides | Leaderboard shows total points and points per game side by side. |
+| 5 | Who parents see | Own team, full detail. Plus a view of every team's top 3. | Team leaderboard: full, own team only. "Hustle Board": top 3 per team, all 15 teams, first name + last initial. Edit rights stay on own team. |
+| 6a | Photos | Releases expected to be in place. Angie confirms at the parent meeting. | Build photo upload. Keep photos visible to coaches and admins only until confirmed. |
+| 6b | Admin | Angie runs it. She has a spreadsheet with all parent emails. | Angie is the first admin. Build CSV import to match her spreadsheet columns. |
+| - | Launch date | First tournament Nov 7-8, 2026. Wants a test at 3v3 (3 weeks left). | Revised schedule below. |
 
-Options:
+Still open:
 
-| Option | How it works | Trade-off |
-|---|---|---|
-| A. One scorer per game (recommended) | First parent to tap "I'm scoring this game" locks it. Coach can reassign. Others watch live totals. | Matches today's process. Clean data. |
-| B. Anyone scores, coach picks official | Each recorder's tally saved separately. Coach marks one as official after the game. | More work for coaches. |
-| C. Anyone scores, all counts added | Simplest code. | Inflated, unfair totals. Not recommended. |
+1. Dates and times of the remaining 3v3 sessions, and which teams play.
+2. A copy (or just the column headers) of Angie's roster spreadsheet.
+3. Photo release confirmation after the parent meeting.
+4. Custom domain, for example `hustle.lakevillenorthgba.org`.
 
-Confirm with the client before building the scoring screen.
-
-## 10. Other questions for the client
-
-1. Should parents see other teams' leaderboards, or only their own?
-2. Are all 15 teams in one season, and do players ever play on two teams?
-3. Do you have a photo release on file for every player? Can we show photos only to coaches and admins?
-4. Who is the admin? One person or a few board members?
-5. Do you want the season award based on total points, or points per game (fair to players who miss games)?
-6. Does a roster spreadsheet exist today (player, jersey, team, parent emails)?
-7. Custom domain, for example `hustle.lakevillenorthgba.org`?
-
-## 11. Build phases and estimate
+## 10. Build phases and estimate
 
 | Phase | Work | Hours |
 |---|---|---|
@@ -170,16 +166,30 @@ Confirm with the client before building the scoring screen.
 | 2. Auth | Invite tokens, Is-this-you page, OTP login, email templates | 16 |
 | 3. Admin | Seasons, teams, roster CSV import, send and resend invites | 12 |
 | 4. Schedule | Game list, coach quick-add, edit, tournaments | 10 |
-| 5. Scoring | Scoring screen, undo, scorer lock, realtime totals, offline queue | 22 |
-| 6. Results | Game summary, season leaderboard, CSV export | 8 |
+| 5. Scoring | Scoring screen, undo, team scorer + scorer lock, realtime totals, offline queue | 22 |
+| 6. Results | Game summary, team leaderboard (total + per game), all-teams top 3 board, CSV export | 10 |
 | 7. Photos | Camera capture, client-side resize, private storage | 8 |
 | 8. PWA + polish | Manifest, icons, wake lock, add-to-home-screen, accessibility | 8 |
-| 9. QA + launch | Device testing (iOS Safari, Android Chrome), pilot with 1 to 2 teams, docs | 12 |
-| **Total** | | **~116 hours** |
+| 9. QA + launch | Device testing (iOS Safari, Android Chrome), 3v3 tests, docs | 12 |
+| **Total** | | **~118 hours** |
 
-Plan for a 6-week build part time, then a 2-week pilot with two teams before the full 15-team rollout.
+## 11. Schedule to hit Nov 7
 
-MVP cut (about 70 hours): phases 0 to 6 without offline, CSV import, or photos. Add those in a second release.
+The original plan (6 weeks build + 2 weeks pilot) ends in late November. That misses the first tournament. The revised plan ships a small test version in 2 weeks and grows it during the 3v3 sessions.
+
+| Dates (2026) | Goal | Scope | Hours |
+|---|---|---|---|
+| Sep 28 - Oct 10 | **3v3 test version** | Phases 0-3, scoring screen with scorer lock and undo, team leaderboard. Admin enters games. No offline, no photos. | ~60 |
+| Oct 10 - Oct 18 | **3v3 tests** (last 2 sessions) | Fix what parents report. Add offline queue. | ~15 |
+| Oct 19 - Nov 1 | **Full feature set** | Coach game entry, all-teams top 3 board, points per game, photos, CSV export, PWA polish | ~35 |
+| Nov 2 - Nov 4 | **Invites out** | Import all 15 rosters. Send invites. Help parents who get stuck. Code freeze Nov 4. | ~8 |
+| Nov 7 - 8 | **First tournament live** | Watch errors live. Hotfix only. | - |
+
+Pace: about 30 hours/week for the first 2 weeks, then about 17 hours/week.
+
+Email volume: about 330 invites (15 teams x ~20 parents + coaches). Resend's free plan allows 100 emails/day, so invites take 4 days. Either send in batches starting Nov 2, or use Resend Pro ($20/month, 50,000 emails/month) for November.
+
+If time runs short, cut in this order: photos, CSV export, all-teams top 3 board. Scoring, login and the team leaderboard stay.
 
 ## 12. Running costs (per month, approximate)
 
@@ -199,6 +209,7 @@ Estimated scale: 15 teams x 10 players x 30 games x 15 events = about 70,000 eve
 | Emails land in spam | Resend with SPF, DKIM, DMARC on the LNGBA domain. Send from a real address. |
 | Poor gym signal | Offline queue, sync badge |
 | Double counting | Single scorer per game (section 9) |
+| Tight timeline for Nov 7 | Ship a test version for 3v3 first. Cut photos, CSV export, all-teams board before scoring or login. |
 | Minor privacy | RLS, private photos, no public pages, first name + last initial in lists |
 | Parent confusion | Is-this-you step, code fallback, one-page help card handed out at the first tournament |
 
