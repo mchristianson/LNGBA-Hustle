@@ -18,6 +18,9 @@ type Op =
   | { type: "insert"; ev: { id: string; game_id: string; player_id: string; action_code: string; points: number; client_created_at: string } }
   | { type: "void"; id: string; voided_at: string };
 
+const ICONS: Record<string, string> = { R: "🏀", S: "✋", B: "🛡️", D: "👐", C: "🛑", A: "🤝", T: "🔄" };
+const fmtPts = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
+
 const EVENT_COLUMNS = "id, player_id, action_code, points, recorded_by, voided_at, client_created_at";
 
 // A write that failed because the phone is offline (no Postgres error code), as opposed to a refusal.
@@ -258,6 +261,12 @@ export function ScoreScreen(props: {
         <Button variant="secondary" disabled={busy} onClick={() => claim(true)}>Take over scoring</Button>
       )}
 
+      {isScorer && (
+        <Notice>
+          <b>Scoring:</b> {actions.map((a) => `${a.label} ${fmtPts(a.points)}`).join(" · ")}
+        </Notice>
+      )}
+
       {isScorer ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {players.map((p) => (
@@ -270,16 +279,16 @@ export function ScoreScreen(props: {
                 </div>
                 <div className="font-display text-3xl font-extrabold tabular" aria-live="polite">{totals[p.id]?.points ?? 0}</div>
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-2 gap-2">
                 {actions.map((a) => (
                   <button key={a.code} type="button" onClick={() => tap(p.id, a.code)}
                     aria-label={`${a.label} for ${p.first_name}`}
-                    className={`min-h-[52px] rounded-lg font-display text-lg font-bold text-white active:scale-95 ${a.points < 0 ? "bg-neg" : "bg-red"}`}>
-                    {a.code} {a.points > 0 ? `+${a.points}` : `−${Math.abs(a.points)}`}
+                    className={`flex min-h-[56px] items-center justify-center gap-2 rounded-lg font-display text-lg font-bold text-white active:scale-95 ${a.points < 0 ? "bg-neg" : "bg-red"}`}>
+                    <span aria-hidden>{ICONS[a.code]}</span>{a.label} {fmtPts(a.points)}
                   </button>
                 ))}
                 <button type="button" onClick={() => undo(p.id)} aria-label={`Undo last tap for ${p.first_name}`}
-                  className="min-h-[52px] rounded-lg border border-line font-display text-lg font-bold text-ink active:scale-95">
+                  className="min-h-[56px] rounded-lg border border-line font-display text-lg font-bold text-ink active:scale-95">
                   Undo
                 </button>
               </div>
@@ -313,7 +322,7 @@ function ReadOnlyTotals({ players, totals, actions }: {
           <tr className="border-b border-line">
             <th className="px-3 py-2">Player</th>
             <th className="px-3 py-2 text-right">Pts</th>
-            {actions.map((a) => <th key={a.code} className="px-2 py-2 text-right">{a.code}</th>)}
+            {actions.map((a) => <th key={a.code} className="px-2 py-2 text-right" title={a.label}>{a.label.slice(0, 3)}</th>)}
           </tr>
         </thead>
         <tbody>

@@ -19,7 +19,7 @@ export function ImportForm({ seasonId }: { seasonId: string }) {
     setError(null);
     const parsed = parseRoster(await file.text());
     setRows(parsed.rows);
-    setWarnings(parsed.warnings);
+    setWarnings(parsed.rows.length || parsed.warnings.length ? parsed.warnings : ["No players found. Is this a .csv file? Excel files must be saved as CSV first."]);
   }
 
   function onImport() {
