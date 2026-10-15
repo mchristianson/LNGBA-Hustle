@@ -12,7 +12,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[teamId]">)
   const team = await getTeam(teamId);
   if (!team) notFound();
   const supabase = await createClient();
-  const [{ isStaff }, { data: games }, { data: players }] = await Promise.all([
+  const [{ isStaff, myPlayerIds }, { data: games }, { data: players }] = await Promise.all([
     getRole(teamId, me.personId),
     supabase.from("games").select("id, team_id, opponent, starts_at, location, event_name, scorer_id").eq("team_id", teamId).order("starts_at"),
     supabase.from("players").select("id, first_name, last_name").eq("team_id", teamId),
@@ -26,7 +26,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[teamId]">)
   const top3 = (gameId: string) =>
     (totals ?? []).filter((t) => t.game_id === gameId).sort((a, b) => b.points - a.points).slice(0, 3);
 
-  const canAdd = isStaff || me.isAdmin;
+  const canAdd = isStaff || me.isAdmin || myPlayerIds.length > 0;
 
   return (
     <div className="flex flex-col gap-6">

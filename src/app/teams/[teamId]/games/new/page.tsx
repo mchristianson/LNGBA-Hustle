@@ -9,8 +9,8 @@ export default async function NewGamePage({ params }: PageProps<"/teams/[teamId]
   const me = await requireMe();
   const team = await getTeam(teamId);
   if (!team) notFound();
-  const { isStaff } = await getRole(teamId, me.personId);
-  if (!isStaff && !me.isAdmin) redirect(`/teams/${teamId}`);
+  const { isStaff, myPlayerIds } = await getRole(teamId, me.personId);
+  if (!isStaff && !me.isAdmin && myPlayerIds.length === 0) redirect(`/teams/${teamId}`);
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
       <PageTitle eyebrow={team.name}>Add game</PageTitle>

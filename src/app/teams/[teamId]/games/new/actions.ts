@@ -21,7 +21,7 @@ export async function addGame(teamId: string, _: GameFormState, formData: FormDa
     event_name: String(formData.get("event_name") ?? "").trim(),
     created_by: me.personId,
   });
-  if (error) return { error: "Could not save the game. Only coaches and admins can add games." };
+  if (error) return { error: "Could not save the game. Only this team's parents, coaches, and admins can add games." };
   if (formData.get("another")) return { saved: `Saved vs. ${opponent}. Add the next one.` };
   redirect(`/teams/${teamId}`);
 }

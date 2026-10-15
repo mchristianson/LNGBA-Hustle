@@ -66,6 +66,20 @@ select pg_temp.act_as('00000000-0000-0000-0000-00000000000e');
 select pg_temp.check((select count(*) from public.games) = 0, 'other team parent sees no games');
 select pg_temp.check((select count(*) from public.players) = 1, 'other team parent sees only own players');
 select pg_temp.check((select count(*) from public.people) = 1, 'people: only self');
+do $$ begin
+  insert into public.games (team_id, opponent, starts_at) values ('30000000-0000-0000-0000-000000000001', 'Sneaky', now());
+  raise exception 'FAIL: parent added game to other team';
+exception when insufficient_privilege then raise notice 'ok: parent cannot add game to other team';
+end $$;
+
+-- Parent adds a game to own team, but cannot edit or delete it.
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
+insert into public.games (id, team_id, opponent, starts_at) values
+  ('50000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001', 'Lakeville', now() + interval '7 days');
+select pg_temp.check((select count(*) from public.games) = 2, 'parent adds game to own team');
+update public.games set opponent = 'Changed' where id = '50000000-0000-0000-0000-000000000002';
+delete from public.games where id = '50000000-0000-0000-0000-000000000002';
+select pg_temp.check((select opponent from public.games where id = '50000000-0000-0000-0000-000000000002') = 'Lakeville', 'parent cannot edit or delete games');
 
 -- Parent 1 claims scorer and records taps.
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');

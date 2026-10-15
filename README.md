@@ -42,9 +42,30 @@ Then put Angie's real email into `supabase/bootstrap_admins.sql` and run it. It 
 **Authentication → Email Templates → Magic Link.** Replace the body with:
 
 ```html
-<h2>Your LNGBA Hustle login</h2>
-<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Log in to Hustle Tracker</a></p>
-<p>Or type this code in the app: <b>{{ .Token }}</b></p>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f5f4;padding:32px 16px;">
+  <tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #dedad8;">
+      <tr><td style="background:#d7191f;padding:20px 28px;font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif;font-size:24px;font-weight:800;letter-spacing:0.04em;color:#ffffff;text-transform:uppercase;">
+        LNGBA Hustle
+      </td></tr>
+      <tr><td style="padding:32px 28px 8px;font-family:'Source Sans 3',-apple-system,'Segoe UI',Arial,sans-serif;color:#17171a;">
+        <h1 style="margin:0 0 12px;font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif;font-size:30px;font-weight:800;line-height:1.05;text-transform:uppercase;color:#17171a;">Your login is ready</h1>
+        <p style="margin:0 0 24px;font-size:16px;line-height:1.5;color:#5d5a5c;">Tap the button to sign in to Hustle Tracker.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:8px;background:#d7191f;">
+          <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" style="display:inline-block;padding:14px 28px;font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#ffffff;text-decoration:none;">Log in to Hustle Tracker</a>
+        </td></tr></table>
+      </td></tr>
+      <tr><td style="padding:24px 28px 32px;font-family:'Source Sans 3',-apple-system,'Segoe UI',Arial,sans-serif;">
+        <p style="margin:0 0 8px;font-size:14px;color:#5d5a5c;">Or type this code in the app:</p>
+        <div style="display:inline-block;padding:10px 18px;background:#fbe7e7;border-radius:8px;font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif;font-size:32px;font-weight:800;letter-spacing:0.18em;color:#a8141a;">{{ .Token }}</div>
+      </td></tr>
+      <tr><td style="padding:16px 28px;border-top:1px solid #dedad8;font-family:'Source Sans 3',-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.5;color:#5d5a5c;">
+        Didn't ask for this? You can ignore this email.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
 ```
 
 **Authentication → Sign In / Providers → Email:** turn off "Allow new users to sign up". The app creates logins itself, and only for roster emails.
@@ -72,7 +93,7 @@ The database security rules have a test script. It runs against any local Postgr
 PGHOST=/tmp PGPORT=55432 PGUSER=postgres npm run test:db
 ```
 
-27 checks, including: parents see only their own team, only the current scorer records taps, the server sets the points, undo works only on your own taps, coaches cannot score, and roster import is admin-only and safe to run twice.
+30 checks, including: parents see only their own team, parents can add (not edit or delete) their own team's games, only the current scorer records taps, the server sets the points, undo works only on your own taps, coaches cannot score, and roster import is admin-only and safe to run twice.
 
 ## How scoring works
 
