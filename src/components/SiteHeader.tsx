@@ -17,11 +17,12 @@ export async function SiteHeader() {
           LNGBA <span className="text-red">Hustle</span>
         </Link>
         {signedIn && (
-          <nav className="flex items-center gap-4 text-sm font-semibold">
-            <Link href="/board">Hustle Board</Link>
-            {isAdmin && <Link href="/admin">Admin</Link>}
+          <nav className="flex items-center gap-2 text-sm font-semibold">
+            {/* py-3 makes each target 44px tall; -my-2 keeps the header from growing. */}
+            <Link href="/board" className="press -my-2 px-1.5 py-3 active:opacity-60">Hustle Board</Link>
+            {isAdmin && <Link href="/admin" className="press -my-2 px-1.5 py-3 active:opacity-60">Admin</Link>}
             <form action="/auth/signout" method="post">
-              <button className="text-white/70 hover:text-white">Log out</button>
+              <button className="press -my-2 px-1.5 py-3 text-white/70 hover:text-white active:opacity-60">Log out</button>
             </form>
           </nav>
         )}

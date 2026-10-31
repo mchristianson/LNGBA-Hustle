@@ -74,7 +74,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[teamId]">)
 
 function GameRow({ game, children }: { game: Game; children?: React.ReactNode }) {
   return (
-    <Link href={`/games/${game.id}`} className="block rounded-xl border border-line bg-card p-4 hover:border-red">
+    <Link href={`/games/${game.id}`} className="press block rounded-xl border border-line bg-card p-4 hover:border-red active:bg-red-soft">
       <div className="flex items-baseline justify-between gap-3">
         <div className="font-display text-xl font-bold uppercase">vs. {game.opponent}</div>
         <div className="shrink-0 text-sm text-muted">{formatGameDate(game.starts_at)}</div>

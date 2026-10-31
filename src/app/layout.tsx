@@ -1,3 +1,4 @@
+import { ViewTransition } from "react";
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -24,7 +25,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${barlow.variable} ${source.variable} antialiased`}>
       <body className="min-h-dvh flex flex-col text-[17px] leading-normal">
         <SiteHeader />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-5">{children}</main>
+        {/* Route changes cross-fade instead of cutting. */}
+        <ViewTransition>
+          <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-5">{children}</main>
+        </ViewTransition>
       </body>
     </html>
   );

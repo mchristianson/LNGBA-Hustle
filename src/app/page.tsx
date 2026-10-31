@@ -21,7 +21,7 @@ export default async function Home() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {teams.map((t) => (
-            <Link key={t.id} href={`/teams/${t.id}`} className="rounded-xl border border-line bg-card p-4 hover:border-red">
+            <Link key={t.id} href={`/teams/${t.id}`} className="press rounded-xl border border-line bg-card p-4 hover:border-red active:bg-red-soft">
               <div className="font-display text-2xl font-bold uppercase">{t.name}</div>
               <div className="text-sm text-muted">Schedule and leaderboard</div>
             </Link>

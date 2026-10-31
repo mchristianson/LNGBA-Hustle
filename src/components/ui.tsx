@@ -18,7 +18,7 @@ export function Card({ className = "", ...props }: ComponentProps<"div">) {
 }
 
 const buttonBase =
-  "inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-5 font-display text-lg font-bold uppercase tracking-wide disabled:opacity-50";
+  "press inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-5 font-display text-lg font-bold uppercase tracking-wide disabled:opacity-50";
 
 export function Button({ variant = "primary", className = "", ...props }: ComponentProps<"button"> & { variant?: "primary" | "secondary" | "ghost" }) {
   const styles = {

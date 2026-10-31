@@ -60,7 +60,7 @@ export default async function AdminPage() {
         {(teams ?? []).map((t) => {
           const s = stats(t.id);
           return (
-            <Link key={t.id} href={`/admin/teams/${t.id}`} className="rounded-xl border border-line bg-card p-4 hover:border-red">
+            <Link key={t.id} href={`/admin/teams/${t.id}`} className="press rounded-xl border border-line bg-card p-4 hover:border-red active:bg-red-soft">
               <div className="font-display text-2xl font-bold uppercase">{t.name}</div>
               <div className="text-sm text-muted tabular">
                 {s.players} players · {s.joined}/{s.parents} parents logged in
