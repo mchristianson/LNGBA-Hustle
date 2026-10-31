@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState, ViewTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button, Notice } from "@/components/ui";
 
@@ -23,6 +23,22 @@ const fmtPts = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
 
 const EVENT_COLUMNS = "id, player_id, action_code, points, recorded_by, voided_at, client_created_at";
 
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Feedback runs on the same frame as the tap and restarts cleanly if tapped again mid-animation.
+function pulse(card: HTMLElement | undefined, kind: "add" | "undo") {
+  if (!card) return;
+  const add = kind === "add";
+  card.animate(
+    { backgroundColor: [add ? "var(--color-red-soft)" : "var(--color-paper)", "var(--color-card)"], borderColor: [add ? "var(--color-red)" : "var(--color-muted)", "var(--color-line)"] },
+    { duration: 400, easing: "ease-out" },
+  );
+  const total = card.querySelector("[data-total]");
+  if (total && !reducedMotion()) {
+    total.animate({ transform: ["scale(1)", add ? "scale(1.15)" : "scale(0.88)", "scale(1)"] }, { duration: 220, easing: "ease-out" });
+  }
+}
+
 // A write that failed because the phone is offline (no Postgres error code), as opposed to a refusal.
 function isNetworkError(error: { code?: string; message?: string }) {
   return (typeof navigator !== "undefined" && !navigator.onLine) || !error.code || /fetch|network/i.test(error.message ?? "");
@@ -43,9 +59,9 @@ export function ScoreScreen(props: {
   const [queued, setQueued] = useState(0);
   const [online, setOnline] = useState(true);
   const [rejected, setRejected] = useState(0);
-  const [flash, setFlash] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"claim" | "takeover" | "release" | null>(null);
   const queue = useRef<Op[]>([]);
+  const cards = useRef(new Map<string, HTMLDivElement>());
   const flushing = useRef(false);
 
   const persist = useCallback(() => {
@@ -164,7 +180,8 @@ export function ScoreScreen(props: {
     } catch {}
   }, []);
   function chooseSort(next: "number" | "name") {
-    setSortBy(next);
+    // A transition so the cards slide to their new spots instead of reshuffling.
+    startTransition(() => setSortBy(next));
     try { localStorage.setItem("hustle-sort", next); } catch {}
   }
   const ordered = useMemo(
@@ -198,6 +215,7 @@ export function ScoreScreen(props: {
     }
     return t;
   }, [live, players]);
+  const undoable = new Set(live.filter((e) => e.recorded_by === me).map((e) => e.player_id));
 
   function tap(playerId: string, code: string) {
     const ev = {
@@ -208,8 +226,7 @@ export function ScoreScreen(props: {
     queue.current.push({ type: "insert", ev });
     persist();
     try { navigator.vibrate?.(15); } catch {}
-    setFlash(playerId);
-    setTimeout(() => setFlash((f) => (f === playerId ? null : f)), 250);
+    pulse(cards.current.get(playerId), "add");
     flush();
   }
 
@@ -230,27 +247,37 @@ export function ScoreScreen(props: {
     }
     persist();
     try { navigator.vibrate?.([10, 40, 10]); } catch {}
+    pulse(cards.current.get(playerId), "undo");
     flush();
   }
 
   async function claim(takeOver: boolean) {
-    setBusy(true);
+    if (takeOver && !confirm(`Take over scoring from ${status?.scorer_name ?? "the current scorer"}? Their taps will stop saving.`)) return;
+    setBusy(takeOver ? "takeover" : "claim");
     const { data } = await supabase.rpc("claim_scorer", { p_game: gameId, p_take_over: takeOver });
     await refreshStatus();
-    setBusy(false);
+    setBusy(null);
     if (!data) alertOnce("Someone else started scoring first.");
   }
 
   async function release() {
-    setBusy(true);
+    setBusy("release");
     await flush();
     await supabase.rpc("release_scorer", { p_game: gameId });
     await refreshStatus();
-    setBusy(false);
+    setBusy(null);
   }
 
   const [message, setMessage] = useState<string | null>(null);
   function alertOnce(text: string) { setMessage(text); setTimeout(() => setMessage(null), 5000); }
+
+  // Toast floats over the grid so the tap buttons never shift under a finger.
+  const toastText = message ?? (rejected > 0
+    ? `${rejected} tap${rejected === 1 ? "" : "s"} could not be saved because you are no longer the scorer for this game.`
+    : null);
+  // Keep the last text while the toast slides away.
+  const [shownToast, setShownToast] = useState("");
+  if (toastText && toastText !== shownToast) setShownToast(toastText);
 
   const syncLabel = !online
     ? queued ? `Offline · ${queued} saved on this phone` : "Offline"
@@ -258,27 +285,36 @@ export function ScoreScreen(props: {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="sticky top-[env(safe-area-inset-top)] z-10 -mx-4 flex flex-wrap items-center justify-between gap-2 border-b border-line bg-paper/95 px-4 py-2 backdrop-blur">
+      <div className="material sticky top-[env(safe-area-inset-top)] z-10 -mx-4 flex flex-wrap items-center justify-between gap-2 px-4 py-2">
         <div className="text-[15px]">
           {isScorer ? <b>You are scoring this game</b>
             : status?.scorer_id ? <><b>{status.scorer_name}</b> is scoring. Totals update live.</>
             : "Nobody is scoring yet."}
         </div>
-        <div className={`text-sm font-semibold ${!online ? "text-warn" : queued ? "text-muted" : "text-ok"}`}>{syncLabel}</div>
+        <div className={`flex items-center gap-1.5 text-sm font-semibold transition-colors duration-300 ${!online ? "text-warn" : queued ? "text-muted" : "text-ok"}`}>
+          <span aria-hidden className="size-2 rounded-full bg-current" />
+          {syncLabel}
+        </div>
       </div>
 
-      {message && <Notice kind="warn">{message}</Notice>}
-      {rejected > 0 && (
-        <Notice kind="warn">
-          {rejected} tap{rejected === 1 ? "" : "s"} could not be saved because you are no longer the scorer for this game.
-        </Notice>
-      )}
+      <div role="status" aria-live="polite" data-open={!!toastText} inert={!toastText}
+        className="toast fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-20 mx-auto flex max-w-md items-center gap-3 rounded-xl bg-ink px-4 py-3 text-[15px] text-white shadow-lg">
+        <span className="flex-1">{shownToast}</span>
+        <button type="button" className="press -my-2 px-2 py-3 font-semibold text-white/80 active:opacity-60"
+          onClick={() => { setMessage(null); setRejected(0); }}>
+          OK
+        </button>
+      </div>
 
       {!isScorer && status?.can_claim && (
-        <Button className="text-xl" disabled={busy} onClick={() => claim(false)}>I&apos;m scoring this game</Button>
+        <Button className="text-xl" disabled={!!busy} onClick={() => claim(false)}>
+          {busy === "claim" ? "Starting..." : <>I&apos;m scoring this game</>}
+        </Button>
       )}
       {!isScorer && status?.can_take_over && (
-        <Button variant="secondary" disabled={busy} onClick={() => claim(true)}>Take over scoring</Button>
+        <Button variant="secondary" disabled={!!busy} onClick={() => claim(true)}>
+          {busy === "takeover" ? "Taking over..." : "Take over scoring"}
+        </Button>
       )}
 
       {isScorer && (
@@ -292,7 +328,7 @@ export function ScoreScreen(props: {
           <span className="text-muted">Sort by</span>
           {(["number", "name"] as const).map((k) => (
             <button key={k} type="button" onClick={() => chooseSort(k)} aria-pressed={sortBy === k}
-              className={`rounded-full border px-3 py-1 font-semibold ${sortBy === k ? "border-red bg-red text-white" : "border-line text-ink"}`}>
+              className={`press rounded-full border px-3 py-2 font-semibold ${sortBy === k ? "border-red bg-red text-white" : "border-line text-ink"}`}>
               {k === "number" ? "Number" : "First name"}
             </button>
           ))}
@@ -302,29 +338,32 @@ export function ScoreScreen(props: {
       {isScorer ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {ordered.map((p) => (
-            <div key={p.id}
-              className={`flex flex-col gap-2.5 rounded-xl border bg-card p-3 transition-colors ${flash === p.id ? "border-red bg-red-soft" : "border-line"}`}>
-              <div className="flex items-baseline justify-between">
-                <div className="font-display text-2xl font-bold">
-                  {p.jersey_number && <span className="text-muted">#{p.jersey_number} </span>}
-                  {p.first_name} {p.last_name.slice(0, 1)}
+            <ViewTransition key={p.id} name={`player-${p.id}`}>
+              <div ref={(el) => { if (el) cards.current.set(p.id, el); return () => { cards.current.delete(p.id); }; }}
+                className="flex flex-col gap-2.5 rounded-xl border border-line bg-card p-3">
+                <div className="flex items-baseline justify-between">
+                  <div className="font-display text-2xl font-bold">
+                    {p.jersey_number && <span className="text-muted">#{p.jersey_number} </span>}
+                    {p.first_name} {p.last_name.slice(0, 1)}
+                  </div>
+                  <div data-total className="origin-right font-display text-3xl font-extrabold tabular" aria-live="polite">{totals[p.id]?.points ?? 0}</div>
                 </div>
-                <div className="font-display text-3xl font-extrabold tabular" aria-live="polite">{totals[p.id]?.points ?? 0}</div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {actions.map((a) => (
-                  <button key={a.code} type="button" onClick={() => tap(p.id, a.code)}
-                    aria-label={`${a.label} for ${p.first_name}`}
-                    className={`flex min-h-[56px] items-center justify-center gap-2 rounded-lg font-display text-lg font-bold text-white active:scale-95 ${a.points < 0 ? "bg-neg" : "bg-red"}`}>
-                    <span aria-hidden>{ICONS[a.code]}</span>{a.label} {fmtPts(a.points)}
+                <div className="grid grid-cols-2 gap-2">
+                  {actions.map((a) => (
+                    <button key={a.code} type="button" onClick={() => tap(p.id, a.code)}
+                      aria-label={`${a.label} for ${p.first_name}`}
+                      className={`press flex min-h-[56px] items-center justify-center gap-2 rounded-lg font-display text-lg font-bold text-white ${a.points < 0 ? "bg-neg" : "bg-red"}`}>
+                      <span aria-hidden>{ICONS[a.code]}</span>{a.label} {fmtPts(a.points)}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => undo(p.id)} disabled={!undoable.has(p.id)}
+                    aria-label={`Undo last tap for ${p.first_name}`}
+                    className="press min-h-[56px] rounded-lg border border-line font-display text-lg font-bold text-ink disabled:opacity-40">
+                    Undo
                   </button>
-                ))}
-                <button type="button" onClick={() => undo(p.id)} aria-label={`Undo last tap for ${p.first_name}`}
-                  className="min-h-[56px] rounded-lg border border-line font-display text-lg font-bold text-ink active:scale-95">
-                  Undo
-                </button>
+                </div>
               </div>
-            </div>
+            </ViewTransition>
           ))}
         </div>
       ) : (
@@ -333,8 +372,9 @@ export function ScoreScreen(props: {
 
       {status?.can_release && (
         <div className="pt-2 text-center">
-          <Button variant="ghost" disabled={busy} onClick={release}>
-            {isScorer ? "Stop scoring (let another parent take over)" : "Clear the current scorer"}
+          <Button variant="ghost" disabled={!!busy} onClick={release}>
+            {busy === "release" ? "Stopping..."
+              : isScorer ? "Stop scoring (let another parent take over)" : "Clear the current scorer"}
           </Button>
         </div>
       )}
