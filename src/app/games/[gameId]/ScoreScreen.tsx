@@ -154,6 +154,26 @@ export function ScoreScreen(props: {
 
   const isScorer = !!status?.is_me;
 
+  // Roster arrives sorted by number. Name sort is remembered on this phone.
+  const [sortBy, setSortBy] = useState<"number" | "name">("number");
+  useEffect(() => {
+    try {
+      // Reading localStorage has to wait until after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (localStorage.getItem("hustle-sort") === "name") setSortBy("name");
+    } catch {}
+  }, []);
+  function chooseSort(next: "number" | "name") {
+    setSortBy(next);
+    try { localStorage.setItem("hustle-sort", next); } catch {}
+  }
+  const ordered = useMemo(
+    () => sortBy === "name"
+      ? [...players].sort((a, b) => a.first_name.localeCompare(b.first_name) || a.last_name.localeCompare(b.last_name))
+      : players,
+    [players, sortBy],
+  );
+
   // Keep the screen awake while scoring.
   useEffect(() => {
     if (!isScorer || !("wakeLock" in navigator)) return;
@@ -267,9 +287,21 @@ export function ScoreScreen(props: {
         </Notice>
       )}
 
+      {isScorer && (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted">Sort by</span>
+          {(["number", "name"] as const).map((k) => (
+            <button key={k} type="button" onClick={() => chooseSort(k)} aria-pressed={sortBy === k}
+              className={`rounded-full border px-3 py-1 font-semibold ${sortBy === k ? "border-red bg-red text-white" : "border-line text-ink"}`}>
+              {k === "number" ? "Number" : "First name"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {isScorer ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          {players.map((p) => (
+          {ordered.map((p) => (
             <div key={p.id}
               className={`flex flex-col gap-2.5 rounded-xl border bg-card p-3 transition-colors ${flash === p.id ? "border-red bg-red-soft" : "border-line"}`}>
               <div className="flex items-baseline justify-between">
