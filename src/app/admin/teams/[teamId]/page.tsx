@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Button, Card, Field, PageTitle, inputClass } from "@/components/ui";
+import { Button, ButtonLink, Card, Field, Notice, PageTitle, inputClass } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { sortPlayers, type Player } from "@/lib/data";
 import { requireAdmin } from "@/lib/session";
 import { addCoach, removeCoach, setDefaultScorer } from "../../actions";
-import { InviteButtons, TeamInviteButton } from "./InviteButtons";
+import { InviteButtons, TeamInviteButton, TeamResendButton } from "./InviteButtons";
 
 type Person = { id: string; name: string; email: string; auth_user_id: string | null };
 
@@ -13,7 +13,7 @@ export default async function AdminTeamPage({ params }: PageProps<"/admin/teams/
   const { teamId } = await params;
   await requireAdmin();
   const supabase = await createClient();
-  const { data: team } = await supabase.from("teams").select("id, name, default_scorer_id").eq("id", teamId).maybeSingle();
+  const { data: team } = await supabase.from("teams").select("id, name, default_scorer_id, is_public").eq("id", teamId).maybeSingle();
   if (!team) notFound();
 
   const [{ data: players }, { data: staff }] = await Promise.all([
@@ -46,9 +46,11 @@ export default async function AdminTeamPage({ params }: PageProps<"/admin/teams/
 
   return (
     <div className="flex flex-col gap-6">
-      <PageTitle eyebrow={<Link href="/admin">← Admin</Link>} action={<TeamInviteButton teamId={teamId} pendingCount={notInvited} />}>
+      <PageTitle eyebrow={<Link href="/admin">← Admin</Link>} action={<div className="flex flex-wrap gap-2"><ButtonLink variant="secondary" href={`/admin/teams/${teamId}/edit`}>Edit team</ButtonLink><TeamInviteButton teamId={teamId} pendingCount={notInvited} /><TeamResendButton teamId={teamId} count={personIds.length} /></div>}>
         {team.name}
       </PageTitle>
+
+      {!team.is_public && <Notice kind="warn">Hidden from parents. Only coaches and admins can see this team.</Notice>}
 
       <Card>
         <form action={setDefaultScorer.bind(null, teamId)} className="flex flex-col gap-3 sm:flex-row sm:items-end">

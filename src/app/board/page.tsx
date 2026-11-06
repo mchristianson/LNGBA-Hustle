@@ -17,7 +17,7 @@ export default async function BoardPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageTitle eyebrow={season?.name ?? "Season"}>Hustle Board</PageTitle>
-      <p className="text-muted">Top 3 hustle players on every team, updated after every game.</p>
+      <p className="text-muted">Top 3 hustle players on every team, updated after every game. Ties share a place, so everyone tied is listed.</p>
       {teams.size === 0 && <p>No teams yet.</p>}
       <div className="grid gap-3 sm:grid-cols-2">
         {[...teams.entries()].map(([id, t]) => (
@@ -25,7 +25,7 @@ export default async function BoardPage() {
             <h2 className="mb-2 text-2xl font-bold">{t.name}</h2>
             <ol className="flex flex-col gap-1.5">
               {t.rows.map((r) => (
-                <li key={r.rank} className="flex items-baseline justify-between gap-3">
+                <li key={`${r.rank}-${r.player_label}-${r.jersey_number}`} className="flex items-baseline justify-between gap-3">
                   <span>
                     <span className="mr-2 font-display text-xl font-extrabold text-red">{r.rank}</span>
                     {r.jersey_number && <span className="text-muted">#{r.jersey_number} </span>}

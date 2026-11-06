@@ -2,7 +2,7 @@ import { Card, Notice, PageTitle } from "@/components/ui";
 import { LoginForm } from "./LoginForm";
 
 const ERRORS: Record<string, string> = {
-  "link-expired": "That login link expired or was already used. Enter your email for a new one.",
+  "link-expired": "That link no longer works. Enter your email for a new one.",
   "not-on-roster": "Your email is not on a team roster yet. Ask your team's coach or the association to add you.",
 };
 
@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
       <PageTitle eyebrow="Lakeville North Girls Basketball">Log in</PageTitle>
-      <p>No password needed. We email you a link and a code.</p>
+      <p>No password needed. We email you a link. It works on any device, and you can open it again anytime this season.</p>
       {message && <Notice kind="warn">{message}</Notice>}
       <Card><LoginForm /></Card>
     </div>

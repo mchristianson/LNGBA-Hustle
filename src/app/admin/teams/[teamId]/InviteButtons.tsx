@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { getInviteLink, sendInvite, sendTeamInvites } from "../../actions";
+import { getInviteLink, resendTeamLinks, sendInvite, sendTeamInvites } from "../../actions";
 
 export function InviteButtons({ personId, teamId }: { personId: string; teamId: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -55,6 +55,31 @@ export function TeamInviteButton({ teamId, pendingCount }: { teamId: string; pen
         className="press inline-flex min-h-12 items-center justify-center rounded-lg bg-red px-5 font-display text-lg font-bold uppercase tracking-wide text-white disabled:opacity-50"
       >
         {pending ? "Sending..." : `Email ${pendingCount} not yet invited`}
+      </button>
+      {msg && <div className="text-sm text-muted">{msg}</div>}
+    </div>
+  );
+}
+
+// Emails a new link to every person on the team, including people who already logged in.
+export function TeamResendButton({ teamId, count }: { teamId: string; count: number }) {
+  const [msg, setMsg] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <div className="flex flex-col gap-1">
+      <button
+        type="button"
+        disabled={pending || count === 0}
+        onClick={() => {
+          if (!window.confirm(`Email a new link to all ${count} people on this team? Anyone who already logged in gets the email too.`)) return;
+          start(async () => {
+            const r = await resendTeamLinks(teamId);
+            setMsg(r.error ? `Sent ${r.count}. Stopped: ${r.error}` : `Sent ${r.count} links.`);
+          });
+        }}
+        className="press inline-flex min-h-12 items-center justify-center rounded-lg border border-ink px-5 font-display text-lg font-bold uppercase tracking-wide text-ink hover:bg-ink hover:text-white disabled:opacity-50"
+      >
+        {pending ? "Sending..." : `Email all ${count} on team`}
       </button>
       {msg && <div className="text-sm text-muted">{msg}</div>}
     </div>

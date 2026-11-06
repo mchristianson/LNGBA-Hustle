@@ -23,7 +23,8 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${barlow.variable} ${source.variable} antialiased`}>
-      <body className="min-h-dvh flex flex-col text-[17px] leading-normal">
+      {/* Browser extensions (e.g. ClickUp) add classes to body before hydration. */}
+      <body suppressHydrationWarning className="min-h-dvh flex flex-col text-[17px] leading-normal">
         <SiteHeader />
         {/* Route changes cross-fade instead of cutting. */}
         <ViewTransition>

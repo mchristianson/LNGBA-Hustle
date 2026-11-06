@@ -78,10 +78,10 @@ export async function emailInvite(personId: string) {
     ? ctx.players.map((p) => `${p.name}${p.jersey ? ` #${p.jersey}` : ""} (${p.team})`).join(", ")
     : ctx.coachTeams.length ? `coaching ${ctx.coachTeams.join(", ")}` : "your team";
   const subject = "Your LNGBA Hustle Tracker link";
-  const text = `Hi ${person.name || "there"},\n\nTap this link to start tracking hustle points for ${who}:\n${url}\n\nNo password needed. Keep this email. The link works all season.\n\nLakeville North Girls Basketball Association`;
+  const text = `Hi ${person.name || "there"},\n\nTap this link to open Hustle Tracker for ${who}:\n${url}\n\nNo password needed. Keep this email. The link works all season.\n\nLakeville North Girls Basketball Association`;
   const html = `<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.5;color:#17171a">
 <p>Hi ${escapeHtml(person.name || "there")},</p>
-<p>Tap the button to start tracking hustle points for <b>${escapeHtml(who)}</b>.</p>
+<p>Tap the button to open Hustle Tracker for <b>${escapeHtml(who)}</b>.</p>
 <p><a href="${url}" style="display:inline-block;background:#d7191f;color:#fff;padding:14px 22px;border-radius:8px;text-decoration:none;font-weight:bold">Open Hustle Tracker</a></p>
 <p style="color:#5d5a5c;font-size:14px">No password needed. Keep this email. The link works all season.<br>Lakeville North Girls Basketball Association</p></div>`;
   const result = await sendEmail(person.email, subject, html, text);
