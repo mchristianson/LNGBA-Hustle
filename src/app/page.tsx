@@ -58,10 +58,10 @@ export default async function Home() {
                   <div className="text-sm text-muted">Schedule and leaderboard</div>
                 </Link>
               ) : (
-                <div key={t.id} className="rounded-xl border border-line bg-card p-4">
+                <Link key={t.id} href={`/board/team/${t.id}`} className="press rounded-xl border border-line bg-card p-4 hover:border-red active:bg-red-soft">
                   <div className="font-display text-2xl font-bold uppercase">{t.name}</div>
-                  <div className="text-sm text-muted">Log in for schedule and results</div>
-                </div>
+                  <div className="text-sm text-muted">Game results</div>
+                </Link>
               ),
             )}
           </div>
