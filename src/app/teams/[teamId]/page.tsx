@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ButtonLink, PageTitle } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
-import { getRole, getTeam, playerLabel, type Game } from "@/lib/data";
+import { canSeeDetail, getRole, getTeam, playerLabel, type Game } from "@/lib/data";
 import { requireMe } from "@/lib/session";
 import { formatGameDate } from "@/lib/time";
 import { DeleteGameButton } from "./DeleteGameButton";
@@ -13,14 +13,15 @@ export default async function TeamPage({ params }: PageProps<"/teams/[teamId]">)
   const team = await getTeam(teamId);
   if (!team) notFound();
   const supabase = await createClient();
-  const [{ isStaff, myPlayerIds }, { data: games }, { data: players }] = await Promise.all([
+  const [{ isStaff, myPlayerIds }, canSee, { data: games }, { data: players }] = await Promise.all([
     getRole(teamId, me.personId),
+    canSeeDetail(teamId, me.personId, me.isAdmin),
     supabase.from("games").select("id, team_id, opponent, starts_at, location, event_name, scorer_id").eq("team_id", teamId).order("starts_at"),
     supabase.from("players").select("id, first_name, last_name").eq("team_id", teamId),
   ]);
   const { upcoming, past } = splitGames((games ?? []) as Game[]);
 
-  const { data: totals } = past.length
+  const { data: totals } = canSee && past.length
     ? await supabase.from("player_game_totals").select("game_id, player_id, points").in("game_id", past.map((g) => g.id))
     : { data: [] };
   const names = new Map((players ?? []).map((p) => [p.id, playerLabel(p)]));
@@ -48,8 +49,8 @@ export default async function TeamPage({ params }: PageProps<"/teams/[teamId]">)
       </PageTitle>
 
       <div className="grid grid-cols-2 gap-3">
-        <ButtonLink variant="secondary" href={`/teams/${teamId}/leaderboard`}>Leaderboard</ButtonLink>
-        <ButtonLink variant="secondary" href="/board">Hustle Board</ButtonLink>
+        {canSee ? <ButtonLink variant="secondary" href={`/teams/${teamId}/leaderboard`}>Leaderboard</ButtonLink> : null}
+        <ButtonLink variant="secondary" href="/board" className={canSee ? undefined : "col-span-2"}>Hustle Board</ButtonLink>
       </div>
 
       <section className="flex flex-col gap-3">
@@ -65,15 +66,17 @@ export default async function TeamPage({ params }: PageProps<"/teams/[teamId]">)
           <h2 className="text-2xl font-bold">Results</h2>
           {past.map((g) => (
             <GameRow key={g.id} game={g} manage={manage(g)}>
-              <ol className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
-                {top3(g.id).map((t) => (
-                  <li key={t.player_id}>
-                    <span className="font-bold text-red">{t.place}.</span> {names.get(t.player_id)}{" "}
-                    <span className="tabular font-semibold">{t.points}</span>
-                  </li>
-                ))}
-                {top3(g.id).length === 0 && <li className="text-muted">No hustle points recorded</li>}
-              </ol>
+              {canSee && (
+                <ol className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[15px]">
+                  {top3(g.id).map((t) => (
+                    <li key={t.player_id}>
+                      <span className="font-bold text-red">{t.place}.</span> {names.get(t.player_id)}{" "}
+                      <span className="tabular font-semibold">{t.points}</span>
+                    </li>
+                  ))}
+                  {top3(g.id).length === 0 && <li className="text-muted">No hustle points recorded</li>}
+                </ol>
+              )}
             </GameRow>
           ))}
         </section>

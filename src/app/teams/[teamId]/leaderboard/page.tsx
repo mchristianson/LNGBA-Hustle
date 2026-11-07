@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageTitle } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
-import { getRole, getTeam } from "@/lib/data";
+import { canSeeDetail, getRole, getTeam } from "@/lib/data";
 import { requireMe } from "@/lib/session";
 
 type Row = {
@@ -15,6 +15,7 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
   const me = await requireMe();
   const team = await getTeam(teamId);
   if (!team) notFound();
+  if (!(await canSeeDetail(teamId, me.personId, me.isAdmin))) redirect(`/teams/${teamId}`);
   const supabase = await createClient();
   const [{ myPlayerIds }, { data }] = await Promise.all([
     getRole(teamId, me.personId),

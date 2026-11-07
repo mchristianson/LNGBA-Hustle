@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getTeam, sortPlayers, type Game, type Player } from "@/lib/data";
+import { canSeeDetail, getTeam, sortPlayers, type Game, type Player } from "@/lib/data";
 import { requireMe } from "@/lib/session";
 import { formatGameDate } from "@/lib/time";
 import { ScoreScreen, type Action, type HustleEvent, type ScorerStatus } from "./ScoreScreen";
@@ -14,12 +14,13 @@ export default async function GamePage({ params }: PageProps<"/games/[gameId]">)
     .from("games").select("id, team_id, opponent, starts_at, location, event_name, scorer_id").eq("id", gameId).maybeSingle();
   if (!game) notFound();
   const g = game as Game;
+  const canSee = await canSeeDetail(g.team_id, me.personId, me.isAdmin);
   const [team, { data: players }, { data: actions }, { data: events }, { data: status }] = await Promise.all([
     getTeam(g.team_id),
-    supabase.from("players").select("id, first_name, last_name, jersey_number").eq("team_id", g.team_id).eq("active", true),
-    supabase.from("hustle_actions").select("code, label, points").order("sort_order"),
-    supabase.from("hustle_events").select("id, player_id, action_code, points, recorded_by, voided_at, client_created_at").eq("game_id", gameId),
-    supabase.rpc("game_scorer_status", { p_game: gameId }),
+    canSee ? supabase.from("players").select("id, first_name, last_name, jersey_number").eq("team_id", g.team_id).eq("active", true) : { data: [] },
+    canSee ? supabase.from("hustle_actions").select("code, label, points").order("sort_order") : { data: [] },
+    canSee ? supabase.from("hustle_events").select("id, player_id, action_code, points, recorded_by, voided_at, client_created_at").eq("game_id", gameId) : { data: [] },
+    canSee ? supabase.rpc("game_scorer_status", { p_game: gameId }) : { data: [] },
   ]);
 
   return (
@@ -33,14 +34,18 @@ export default async function GamePage({ params }: PageProps<"/games/[gameId]">)
           {[formatGameDate(g.starts_at), g.event_name, g.location].filter(Boolean).join(" · ")}
         </div>
       </div>
-      <ScoreScreen
-        gameId={gameId}
-        me={me.personId}
-        players={sortPlayers((players ?? []) as Player[])}
-        actions={(actions ?? []) as Action[]}
-        initialEvents={(events ?? []) as HustleEvent[]}
-        initialStatus={((status ?? [])[0] ?? null) as ScorerStatus | null}
-      />
+      {canSee ? (
+        <ScoreScreen
+          gameId={gameId}
+          me={me.personId}
+          players={sortPlayers((players ?? []) as Player[])}
+          actions={(actions ?? []) as Action[]}
+          initialEvents={(events ?? []) as HustleEvent[]}
+          initialStatus={((status ?? [])[0] ?? null) as ScorerStatus | null}
+        />
+      ) : (
+        <p className="text-muted">Hustle point details are for the team&apos;s scorers.</p>
+      )}
     </div>
   );
 }

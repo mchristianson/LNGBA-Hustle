@@ -37,6 +37,19 @@ export async function getRole(teamId: string, personId: string) {
   return { isStaff: !!staff, myPlayerIds: (kids ?? []).map((k) => k.player_id as string) };
 }
 
+// Scorers (and coaches and admins) see the leaderboard and per-game point detail.
+// Everyone else sees the schedule and the Hustle Board.
+export async function canSeeDetail(teamId: string, personId: string, isAdmin: boolean) {
+  if (isAdmin) return true;
+  const supabase = await createClient();
+  const [{ isStaff }, { data: team }, { data: scoring }] = await Promise.all([
+    getRole(teamId, personId),
+    supabase.from("teams").select("default_scorer_id").eq("id", teamId).maybeSingle(),
+    supabase.from("games").select("id").eq("team_id", teamId).eq("scorer_id", personId).limit(1),
+  ]);
+  return isStaff || team?.default_scorer_id === personId || (scoring ?? []).length > 0;
+}
+
 export function sortPlayers<T extends Player>(players: T[]) {
   return [...players].sort((a, b) => {
     const na = parseInt(a.jersey_number, 10), nb = parseInt(b.jersey_number, 10);

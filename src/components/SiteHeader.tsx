@@ -16,16 +16,20 @@ export async function SiteHeader() {
         <Link href="/" className="font-display text-2xl font-extrabold uppercase tracking-wide">
           LNGBA <span className="text-red">Hustle</span>
         </Link>
-        {signedIn && (
-          <nav className="flex items-center gap-2 text-sm font-semibold">
-            {/* py-3 makes each target 44px tall; -my-2 keeps the header from growing. */}
-            <Link href="/board" className="press -my-2 px-1.5 py-3 active:opacity-60">Hustle Board</Link>
-            {isAdmin && <Link href="/admin" className="press -my-2 px-1.5 py-3 active:opacity-60">Admin</Link>}
-            <form action="/auth/signout" method="post">
-              <button className="press -my-2 px-1.5 py-3 text-white/70 hover:text-white active:opacity-60">Log out</button>
-            </form>
-          </nav>
-        )}
+        {/* py-3 makes each target 44px tall; -my-2 keeps the header from growing. */}
+        <nav className="flex items-center gap-2 text-sm font-semibold">
+          <Link href="/board" className="press -my-2 px-1.5 py-3 active:opacity-60">Hustle Board</Link>
+          {signedIn ? (
+            <>
+              {isAdmin && <Link href="/admin" className="press -my-2 px-1.5 py-3 active:opacity-60">Admin</Link>}
+              <form action="/auth/signout" method="post">
+                <button className="press -my-2 px-1.5 py-3 text-white/70 hover:text-white active:opacity-60">Log out</button>
+              </form>
+            </>
+          ) : (
+            <Link href="/login" className="press ml-1 rounded-lg bg-red px-3 py-1.5 text-white hover:bg-red-dark active:opacity-60">Log in</Link>
+          )}
+        </nav>
       </div>
     </header>
   );
