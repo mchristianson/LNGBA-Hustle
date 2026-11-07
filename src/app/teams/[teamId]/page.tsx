@@ -37,7 +37,12 @@ export default async function TeamPage({ params }: PageProps<"/teams/[teamId]">)
   const canAdd = isStaff || me.isAdmin || myPlayerIds.length > 0;
   const canManage = isStaff || me.isAdmin;
   const manage = (g: Game) =>
-    canManage ? <DeleteGameButton teamId={teamId} gameId={g.id} label={`vs. ${g.opponent} on ${formatGameDate(g.starts_at)}`} /> : null;
+    canManage ? (
+      <div className="flex items-center gap-4">
+        <Link href={`/games/${g.id}/edit`} className="text-sm font-semibold text-muted underline underline-offset-4 hover:text-ink">Edit</Link>
+        <DeleteGameButton teamId={teamId} gameId={g.id} label={`vs. ${g.opponent} on ${formatGameDate(g.starts_at)}`} />
+      </div>
+    ) : null;
 
   return (
     <div className="flex flex-col gap-6">

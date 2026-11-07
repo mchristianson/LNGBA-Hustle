@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { canSeeDetail, getTeam, sortPlayers, type Game, type Player } from "@/lib/data";
+import { canSeeDetail, getRole, getTeam, sortPlayers, type Game, type Player } from "@/lib/data";
 import { requireMe } from "@/lib/session";
 import { formatGameDate } from "@/lib/time";
+import { ButtonLink } from "@/components/ui";
 import { ScoreScreen, type Action, type HustleEvent, type ScorerStatus } from "./ScoreScreen";
 
 export default async function GamePage({ params }: PageProps<"/games/[gameId]">) {
@@ -15,7 +16,8 @@ export default async function GamePage({ params }: PageProps<"/games/[gameId]">)
   if (!game) notFound();
   const g = game as Game;
   const canSee = await canSeeDetail(g.team_id, me.personId, me.isAdmin);
-  const [team, { data: players }, { data: actions }, { data: events }, { data: status }] = await Promise.all([
+  const [{ isStaff }, team, { data: players }, { data: actions }, { data: events }, { data: status }] = await Promise.all([
+    getRole(g.team_id, me.personId),
     getTeam(g.team_id),
     canSee ? supabase.from("players").select("id, first_name, last_name, jersey_number").eq("team_id", g.team_id).eq("active", true) : { data: [] },
     canSee ? supabase.from("hustle_actions").select("code, label, points").order("sort_order") : { data: [] },
@@ -33,6 +35,11 @@ export default async function GamePage({ params }: PageProps<"/games/[gameId]">)
         <div className="text-[15px] text-muted">
           {[formatGameDate(g.starts_at), g.event_name, g.location].filter(Boolean).join(" · ")}
         </div>
+        {(me.isAdmin || isStaff || g.scorer_id === me.personId) && (
+          <div className="mt-2">
+            <ButtonLink variant="secondary" href={`/games/${gameId}/edit`} className="min-h-10 text-base">Edit game</ButtonLink>
+          </div>
+        )}
       </div>
       {canSee ? (
         <ScoreScreen

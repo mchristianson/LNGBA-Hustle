@@ -21,6 +21,16 @@ export function localInputToIso(value: string) {
   return new Date(guess - zoneOffsetMs(new Date(first))).toISOString();
 }
 
+// UTC ISO string -> "2026-11-07T09:00" for a datetime-local input in the league's time zone.
+export function isoToLocalInput(iso: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE, hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)!.value;
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
 function zoneOffsetMs(date: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: TIME_ZONE, hourCycle: "h23",
