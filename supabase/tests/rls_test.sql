@@ -58,8 +58,9 @@ select pg_temp.act_as('00000000-0000-0000-0000-00000000000d');
 insert into public.games (id, team_id, opponent, starts_at) values
   ('50000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'Prior Lake', now());
 select pg_temp.check((select count(*) from public.games) = 1, 'coach sees own team game');
-select pg_temp.check((select can_claim from public.game_scorer_status('50000000-0000-0000-0000-000000000001')) = false, 'coach cannot claim scorer');
-select pg_temp.check(public.claim_scorer('50000000-0000-0000-0000-000000000001') = false, 'coach claim refused');
+select pg_temp.check((select can_claim from public.game_scorer_status('50000000-0000-0000-0000-000000000001')) = true, 'coach can claim scorer');
+select pg_temp.check(public.claim_scorer('50000000-0000-0000-0000-000000000001') = true, 'coach claims scorer');
+select pg_temp.check(public.release_scorer('50000000-0000-0000-0000-000000000001') = true, 'coach clears scorer');
 
 -- Other team's parent sees nothing.
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000e');
@@ -119,6 +120,9 @@ select pg_temp.check((select count(*) from public.hustle_events) = 3, 'parent2 r
 select pg_temp.check((select scorer_name from public.game_scorer_status('50000000-0000-0000-0000-000000000001')) = 'Pat One', 'scorer name visible');
 select pg_temp.check((select can_take_over from public.game_scorer_status('50000000-0000-0000-0000-000000000001')), 'default scorer may take over');
 select pg_temp.check(public.claim_scorer('50000000-0000-0000-0000-000000000001', true), 'default scorer takes over');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000b');
+select pg_temp.check((select can_take_over from public.game_scorer_status('50000000-0000-0000-0000-000000000001')), 'any parent may take over');
+select pg_temp.act_as('00000000-0000-0000-0000-00000000000c');
 update public.hustle_events set voided_at = now() where id = '60000000-0000-0000-0000-000000000001';
 select pg_temp.check((select voided_at from public.hustle_events where id = '60000000-0000-0000-0000-000000000001') is null, 'cannot undo someone else''s tap');
 

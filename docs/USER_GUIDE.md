@@ -48,7 +48,7 @@ Admins, coaches, and parents on the team can add games with the team page **Add 
 ### E. During the season
 
 - **Watch adoption:** Admin page shows parents logged in per team. Resend invites to stragglers.
-- **Unstick a game:** open the game. If a scorer left or their phone died, tap **Take over scoring** (you can always take over) or **Clear the current scorer** so another parent can claim it.
+- **Unstick a game:** open the game. If a scorer left or their phone died, any parent or coach can tap **Take over scoring**. Points already scored stay. The old scorer's phone gets a red banner saying someone took over. Or tap **Clear the current scorer** so another parent can claim it.
 - **Fix mistakes:** scorers can undo their own taps for 24 hours. After that, edit rows in the Supabase table editor (`hustle_events`) (I will do that if needed).
 - **Roster changes:** edit the CSV and re-import, or add coaches/admins in the app.
 - **See results:** team page → **Leaderboard** (total points and points per game); **Hustle Board** in the top bar (top 3 for every team).
@@ -75,7 +75,7 @@ If the link says it expired, use **Log in with email** instead.
 ### C. Start scoring
 
 1. Open the game. Tap **I'm scoring this game**.
-2. Only one parent scores per game. If someone else already started, you see their name and the totals update live. The team scorer or an admin can take over if needed.
+2. Only one parent scores per game. If someone else already started, you see their name and the totals update live. Any parent or coach can take over if needed.
 
 ### D. Scoring plays
 
@@ -122,7 +122,7 @@ Open the game any time to see live totals for each player. Read-only, no buttons
 |---|---|
 | "I never got the email" | Check spam. Admin copies the link and texts it. Confirm the email on the roster matches. |
 | Login says sent, nothing arrives | Email must be on the roster. Admin checks the spelling. |
-| Someone else grabbed scoring | Team scorer or admin taps **Take over scoring**. |
+| Someone else grabbed scoring | Any parent or coach taps **Take over scoring**. |
 | Scorer's phone died | Admin taps **Clear the current scorer**, another parent claims it. |
 | Wrong player got points | Scorer taps Undo on that player (within 24 hours). |
 | Parent says "not me" | Fix the email on the roster and re-import, then resend the invite. |

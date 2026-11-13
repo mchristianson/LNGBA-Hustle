@@ -54,7 +54,7 @@ export default async function AdminTeamPage({ params }: PageProps<"/admin/teams/
 
       <Card>
         <form action={setDefaultScorer.bind(null, teamId)} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <Field label="Team scorer" hint="The parent who runs the app at games. They can take over scoring any game.">
+          <Field label="Team scorer" hint="The parent who usually runs the app at games.">
             <select name="person_id" defaultValue={team.default_scorer_id ?? ""} className={inputClass}>
               <option value="">Not set</option>
               {parents.map((p) => <option key={p.id} value={p.id}>{p.name || p.email}</option>)}

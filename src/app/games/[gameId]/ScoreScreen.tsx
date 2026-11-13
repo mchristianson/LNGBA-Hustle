@@ -63,6 +63,8 @@ export function ScoreScreen(props: {
   const queue = useRef<Op[]>([]);
   const cards = useRef(new Map<string, HTMLDivElement>());
   const flushing = useRef(false);
+  const wasScorer = useRef(props.initialStatus?.is_me ?? false);
+  const [displacedBy, setDisplacedBy] = useState<string | null>(null);
 
   const persist = useCallback(() => {
     try { localStorage.setItem(queueKey, JSON.stringify(queue.current)); } catch {}
@@ -71,7 +73,14 @@ export function ScoreScreen(props: {
 
   const refreshStatus = useCallback(async () => {
     const { data } = await supabase.rpc("game_scorer_status", { p_game: gameId });
-    if (data) setStatus((data[0] ?? null) as ScorerStatus | null);
+    const next = (data?.[0] ?? null) as ScorerStatus | null;
+    // Tell the phone that was scoring when someone else takes over.
+    if (wasScorer.current && next?.scorer_id && !next.is_me) {
+      setDisplacedBy(next.scorer_name ?? "Another parent");
+      try { navigator.vibrate?.([200, 100, 200]); } catch {}
+    }
+    wasScorer.current = !!next?.is_me;
+    if (data) setStatus(next);
   }, [supabase, gameId]);
 
   const refreshEvents = useCallback(async () => {
@@ -252,7 +261,8 @@ export function ScoreScreen(props: {
   }
 
   async function claim(takeOver: boolean) {
-    if (takeOver && !confirm(`Take over scoring from ${status?.scorer_name ?? "the current scorer"}? Their taps will stop saving.`)) return;
+    const name = status?.scorer_name ?? "the current scorer";
+    if (takeOver && !confirm(`Take over scoring from ${name}?\n\nPoints already scored stay in the totals. ${name}'s new taps stop saving, and you'll score from here on.`)) return;
     setBusy(takeOver ? "takeover" : "claim");
     const { data } = await supabase.rpc("claim_scorer", { p_game: gameId, p_take_over: takeOver });
     await refreshStatus();
@@ -305,6 +315,15 @@ export function ScoreScreen(props: {
           OK
         </button>
       </div>
+
+      {displacedBy && (
+        <div role="alert" className="flex items-center gap-3 rounded-xl bg-red px-4 py-3 text-[15px] text-white">
+          <span className="flex-1"><b>{displacedBy} has taken over scoring.</b> Points already scored stay. Your new taps won&apos;t save.</span>
+          <button type="button" className="press -my-2 px-2 py-3 font-semibold text-white/80 active:opacity-60" onClick={() => setDisplacedBy(null)}>
+            Got it
+          </button>
+        </div>
+      )}
 
       {!isScorer && status?.can_claim && (
         <Button className="text-xl" disabled={!!busy} onClick={() => claim(false)}>
