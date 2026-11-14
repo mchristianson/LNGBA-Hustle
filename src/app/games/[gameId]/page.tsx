@@ -15,14 +15,18 @@ export default async function GamePage({ params }: PageProps<"/games/[gameId]">)
     .from("games").select("id, team_id, opponent, starts_at, location, event_name, scorer_id").eq("id", gameId).maybeSingle();
   if (!game) notFound();
   const g = game as Game;
-  const canSee = await canSeeDetail(g.team_id, me.personId, me.isAdmin);
-  const [{ isStaff }, team, { data: players }, { data: actions }, { data: events }, { data: status }] = await Promise.all([
+  // Any parent or coach can start or take over scoring, so they all get the scoring screen.
+  const [seen, { data: status }] = await Promise.all([
+    canSeeDetail(g.team_id, me.personId, me.isAdmin),
+    supabase.rpc("game_scorer_status", { p_game: gameId }),
+  ]);
+  const canSee = seen || !!(status as ScorerStatus[] | null)?.[0]?.can_claim || !!(status as ScorerStatus[] | null)?.[0]?.can_take_over;
+  const [{ isStaff }, team, { data: players }, { data: actions }, { data: events }] = await Promise.all([
     getRole(g.team_id, me.personId),
     getTeam(g.team_id),
     canSee ? supabase.from("players").select("id, first_name, last_name, jersey_number").eq("team_id", g.team_id).eq("active", true) : { data: [] },
     canSee ? supabase.from("hustle_actions").select("code, label, points").order("sort_order") : { data: [] },
     canSee ? supabase.from("hustle_events").select("id, player_id, action_code, points, recorded_by, voided_at, client_created_at").eq("game_id", gameId) : { data: [] },
-    canSee ? supabase.rpc("game_scorer_status", { p_game: gameId }) : { data: [] },
   ]);
 
   return (

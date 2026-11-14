@@ -21,6 +21,10 @@ export default async function TeamBoardPage({ params }: PageProps<"/board/team/[
   const team = ((teams ?? []) as { team_id: string; team_name: string }[]).find((t) => t.team_id === teamId);
   if (!team) notFound();
 
+  // RLS only returns games for this team's parents, coaches and admins, so everyone else gets no links.
+  const { data: mine } = await supabase.from("games").select("id").eq("team_id", teamId);
+  const canOpen = new Set((mine ?? []).map((g) => g.id as string));
+
   const byGame = new Map<string, { opponent: string; starts: string; rows: Row[] }>();
   for (const r of ((games ?? []) as Row[]).filter((r) => r.team_id === teamId)) {
     if (!byGame.has(r.game_id)) byGame.set(r.game_id, { opponent: r.opponent, starts: r.starts_at, rows: [] });
@@ -32,12 +36,17 @@ export default async function TeamBoardPage({ params }: PageProps<"/board/team/[
       <PageTitle eyebrow="Hustle Board">{team.team_name}</PageTitle>
       <Link href="/" className="text-sm font-semibold text-red">← All teams</Link>
       <PointsLegend />
+      {canOpen.size > 0 && <p className="text-sm text-muted">Tap a game to score it or see it live.</p>}
       {byGame.size === 0 && <p>No games have been played yet.</p>}
       <div className="grid gap-3 sm:grid-cols-2">
         {[...byGame.entries()].map(([id, g]) => (
-          <section key={id} className="rounded-xl border border-line bg-card p-4">
+          <section key={id} className="relative rounded-xl border border-line bg-card p-4">
             <div className="mb-2 flex items-baseline justify-between gap-3">
-              <h2 className="font-display text-xl font-bold uppercase">vs. {g.opponent}</h2>
+              <h2 className="font-display text-xl font-bold uppercase">
+                {canOpen.has(id)
+                  ? <Link href={`/games/${id}`} className="after:absolute after:inset-0">vs. {g.opponent}</Link>
+                  : <>vs. {g.opponent}</>}
+              </h2>
               <div className="shrink-0 text-sm text-muted">{formatGameDate(g.starts)}</div>
             </div>
             {g.rows.length === 0 ? (
